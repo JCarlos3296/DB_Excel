@@ -4,6 +4,7 @@ package excel_to_db;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.util.ArrayList;
 import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
@@ -29,7 +30,9 @@ public class Excel_to_DB {
 
             HSSFCell cell;
             HSSFRow row;
-
+            
+            ArrayList<String> arrComplete = new ArrayList<String>();
+                
             for (int i = 0; i < sheet.getLastRowNum() + 1; i++) {
                 row = sheet.getRow(i);
                 String strCell = "";
@@ -39,16 +42,49 @@ public class Excel_to_DB {
                 }
                 String[] partirConjunto = strCell.split("::");
                 String[] separarCadena = partirConjunto[1].split("\\(");
+                String[] catTemporal = partirConjunto[2].split("\\|");
+                  
                 String year;
-                if(separarCadena.length > 2){
+                if(separarCadena.length == 3){
                    separarCadena[0] += ("(" + separarCadena[1]);
                    year = separarCadena[2].split("\\)")[0];
-                } else {
+                }else if(separarCadena.length > 3){
+                    separarCadena[0] += ("(" + separarCadena[1] + "(" + separarCadena[2] );
+                    year = separarCadena[3].split("\\)")[0];
+                }else {
                    year = separarCadena[1].split("\\)")[0];
                 }
-                con.ejecutar("INSERT INTO movies_tbl (_id, _name, _year, _category) values ('" + partirConjunto[0] + "', \"" + separarCadena[0]  + "\", \"" + year + "\", \"" + partirConjunto[2] +  "\")");
-                System.out.println("{ id: " + partirConjunto[0] + " nombre: " + separarCadena[0] + " año: " + year + " categoria: " + partirConjunto[2] + " }");
+               
+                for (int j = 0; j < catTemporal.length; j++) {
+                   if(arrComplete.isEmpty()){
+                       arrComplete.add(catTemporal[j]);
+                       //System.out.println(catTemporal[j]);
+                   }else{
+                       if(!(arrComplete.contains(catTemporal[j]))){
+                           arrComplete.add(catTemporal[j]);
+                           //System.out.println("");
+                       }
+                    }
+                }
+                
+                //, \"" + partirConjunto[2] +  "\"
+                // + " categoria: " + partirConjunto[2]
+             con.ejecutar("INSERT INTO movies_tbl (_name, _year) values (\"" + separarCadena[0]  + "\"," + year + ")");
+                for (int j = 0; j < arrComplete.size(); j++) {
+                    for (int k = 0; k < catTemporal.length; k++) {
+                        if(arrComplete.get(j).contains(catTemporal[k])){
+                            con.ejecutar("INSERT INTO mov_cat (id_movie, id_category) values("+ partirConjunto[0] +", "+ (j+1) +")");
+                        }
+                    }
+                }
+             System.out.println("{ id: " + partirConjunto[0] + " nombre: " + separarCadena[0] + " año: " + year + " }");
             }
+            
+            for (String n : arrComplete) {
+                con.ejecutar("INSERT INTO categories_tbl (descripcion) values(\"" + n + "\")");
+            }
+            
+            
             con.close();
             System.out.println("");
             System.out.println("¡ " + sheet.getLastRowNum() +" Datos Impresos Correctamente!");
