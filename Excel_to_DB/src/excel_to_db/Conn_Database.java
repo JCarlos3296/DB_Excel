@@ -7,7 +7,9 @@ package excel_to_db;
 //imports
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 public class Conn_Database {
     
@@ -29,6 +31,16 @@ public class Conn_Database {
     
     public boolean ejecutar(String sentencia) throws SQLException {
         return connect.createStatement().execute(sentencia);
+    }
+    
+    public int peticion(String categoria) throws SQLException{
+       int o = 0;
+       Statement s = connect.createStatement();
+       ResultSet rs = s.executeQuery("SELECT codigo_categoria FROM `genero` WHERE descripcion = \"" + categoria + "\"");
+       while(rs.next()){
+           o = rs.getInt(1);
+       }
+       return o;
     }
 
     public void close() {
